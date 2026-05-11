@@ -1,0 +1,24 @@
+[workspace]
+members = [".", "procx-macros"]
+default-members = ["."]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[package]
+name = "procx"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+shell-escape = "0.1.5"
+procx-macros = { path = "procx-macros" }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Threading"] }
+windows-core = "0.62.2"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.186"
+nix = "0.31.3"
