@@ -5,6 +5,8 @@ default-members = ["."]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
+# this is the first version of rust that supports 2024 edition
+rust-version = "1.85.0"
 
 [package]
 name = "procx"
