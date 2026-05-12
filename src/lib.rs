@@ -73,7 +73,7 @@ pub mod plumbing {
 /// # use procx::cmd;
 /// let name = "world";
 /// let cmd = cmd!("echo 'single quotes' 'hello '{name}");
-/// assert_eq!(cmd.to_string(), r#"`echo "single quotese" "hello world"`"#);
+/// assert_eq!(cmd.to_string(), r#"`echo "single quotes" "hello world"`"#);
 /// ```
 /// 
 /// Use `{arg..}` to pass multiple arguments to the command.
