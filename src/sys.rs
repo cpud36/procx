@@ -1,4 +1,7 @@
-use std::{io, process::{ChildStderr, ChildStdout}};
+use std::{
+    io,
+    process::{ChildStderr, ChildStdout},
+};
 
 // std supports unix, windows, uefi and motor.
 // atm it is enough to support just unix and windows as it covers the majority of use cases.
@@ -21,7 +24,8 @@ pub(crate) fn read_output(
 #[cfg(target_family = "unix")]
 mod unix {
     use std::{
-        io::{self, Read}, mem,
+        io::{self, Read},
+        mem,
         os::fd::{AsRawFd, RawFd},
         process::{ChildStderr, ChildStdout},
     };

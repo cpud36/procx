@@ -9,13 +9,20 @@ pub fn cmd(input: TokenStream) -> TokenStream {
         let krate = Krate::new(&mut input);
         let args = lex(input, &krate, errors)?;
         let mut args = args.into_iter();
-        let cmd = args.next().ok_or_else(|| errors.emit("expected the command to be specified", proc_macro::Span::call_site()))?;
+        let cmd = args.next().ok_or_else(|| {
+            errors.emit(
+                "expected the command to be specified",
+                proc_macro::Span::call_site(),
+            )
+        })?;
         let mut acc = TokenStream::new();
         if args.len() == 0 {
             krate.new_cmd(cmd.into_tt(&krate), &mut acc);
             return Ok(acc);
         }
-        let stok = let_mut("acc", &mut acc, |acc| krate.new_cmd(cmd.into_tt(&krate), acc));
+        let stok = let_mut("acc", &mut acc, |acc| {
+            krate.new_cmd(cmd.into_tt(&krate), acc)
+        });
         extend_args(args, &stok, &mut acc, &krate);
         acc.extend([stok]);
         let tt = TokenTree::Group(Group::new(Delimiter::Brace, acc));
@@ -30,12 +37,17 @@ pub fn arg(input: TokenStream) -> TokenStream {
         let krate = Krate::new(&mut input);
         let args = lex(input, &krate, errors)?;
         let mut args = args.into_iter();
-        let arg = args.next().ok_or_else(|| errors.emit("expected the argument", proc_macro::Span::call_site()))?;
+        let arg = args
+            .next()
+            .ok_or_else(|| errors.emit("expected the argument", proc_macro::Span::call_site()))?;
         if let Some(second) = args.next() {
             errors.emit("expected at most one argument", second.span());
         }
         if let CmdPart::Splat(_) = &arg {
-            return Err(errors.emit("splat arguments are not yet supported, use args! instead", arg.span()));
+            return Err(errors.emit(
+                "splat arguments are not yet supported, use args! instead",
+                arg.span(),
+            ));
         }
         let mut acc = TokenStream::new();
         krate.new_arg(arg.into_tt(&krate), &mut acc);
@@ -62,7 +74,12 @@ pub fn args(input: TokenStream) -> TokenStream {
     })
 }
 
-fn extend_args(args: std::vec::IntoIter<CmdPart>, target: &TokenTree, acc: &mut TokenStream, krate: &Krate) {
+fn extend_args(
+    args: std::vec::IntoIter<CmdPart>,
+    target: &TokenTree,
+    acc: &mut TokenStream,
+    krate: &Krate,
+) {
     for arg in args {
         match arg {
             CmdPart::Arg(_) | CmdPart::Combined(_) => {
@@ -79,8 +96,14 @@ fn extend_args(args: std::vec::IntoIter<CmdPart>, target: &TokenTree, acc: &mut 
     }
 }
 
-fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<CmdPart>, ErrorGuaranteed> {
-    let cmd = input.next().ok_or_else(|| errors.emit("expected command", krate.full_span))?;
+fn lex(
+    mut input: InputIter,
+    krate: &Krate,
+    errors: &mut Errors,
+) -> Result<Vec<CmdPart>, ErrorGuaranteed> {
+    let cmd = input
+        .next()
+        .ok_or_else(|| errors.emit("expected command", krate.full_span))?;
     let (cmd, cmd_span) = string_literal(&cmd, errors)?;
     let mut cmd = TextCursor::new(cmd.as_str(), cmd_span);
     let mut args = Vec::new();
@@ -88,15 +111,24 @@ fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<C
     while let Ok(Some(token)) = cmd.eat_token(errors) {
         if let Some(splat) = prev_splat.take() {
             if token.joined_to_prev {
-                errors.emit(&format!("can't combine splat with concatentaion, add spaces around {{{}..}}``", splat.text), splat.span);
+                errors.emit(
+                    &format!(
+                        "can't combine splat with concatentaion, add spaces around {{{}..}}``",
+                        splat.text
+                    ),
+                    splat.span,
+                );
             }
         }
         let tt = match token.kind {
             TokenKind::Word | TokenKind::String => token.to_tt(&krate),
             TokenKind::Interpolation { inline: false, .. } => {
-                errors.emit("non-inline interpolation arguments are not yet supported", token.span);
+                errors.emit(
+                    "non-inline interpolation arguments are not yet supported",
+                    token.span,
+                );
                 continue;
-            },
+            }
             TokenKind::Interpolation { splat: false, .. } => {
                 let tok = token.to_tt(&krate);
                 let and_amp = TokenStream::from_iter([
@@ -104,7 +136,7 @@ fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<C
                     tok,
                 ]);
                 TokenTree::Group(Group::new(Delimiter::Parenthesis, and_amp))
-            },
+            }
             TokenKind::Interpolation { splat: true, .. } => {
                 prev_splat = Some(token.clone());
                 args.push(CmdPart::Splat(token.to_tt(&krate)));
@@ -116,11 +148,11 @@ fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<C
             _ => args.push(CmdPart::Arg(tt)),
         }
     }
-    
+
     if let Some(tok) = input.next() {
         errors.emit("interpolation arguments are not yet supported", tok.span());
     }
-    
+
     Ok(args)
 }
 
@@ -133,7 +165,9 @@ struct Krate {
 impl Krate {
     fn new(input: &mut InputIter) -> Self {
         let opts = input.peek().and_then(|tt| match tt {
-            TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => Some(group.stream()),
+            TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+                Some(group.stream())
+            }
             _ => None,
         });
         if opts.is_some() {
@@ -174,9 +208,7 @@ impl Krate {
 
     fn call(&self, ident: &str, args: TokenStream, acc: &mut TokenStream) {
         self.plumbing(ident, acc);
-        acc.extend([
-            TokenTree::Group(Group::new(Delimiter::Parenthesis, args)),
-        ]);
+        acc.extend([TokenTree::Group(Group::new(Delimiter::Parenthesis, args))]);
     }
 
     fn method(&self, ident: &str, args: TokenStream, acc: &mut TokenStream) {
@@ -191,7 +223,7 @@ impl Krate {
     fn new_string(&self, acc: &mut TokenStream) {
         self.call("new_string", TokenStream::new(), acc);
     }
-    
+
     fn new_cmd(&self, cmd: TokenTree, acc: &mut TokenStream) {
         self.call("new_cmd", TokenStream::from_iter([cmd]), acc);
     }
@@ -207,7 +239,7 @@ impl Krate {
     fn arg_method(&self, arg: TokenTree, acc: &mut TokenStream) {
         self.method("arg", TokenStream::from_iter([arg]), acc);
     }
-    
+
     fn args_method(&self, args: TokenTree, acc: &mut TokenStream) {
         self.method("args", TokenStream::from_iter([args]), acc);
     }
@@ -279,9 +311,7 @@ fn let_mut(ident: &str, acc: &mut TokenStream, init: impl FnOnce(&mut TokenStrea
         TokenTree::Punct(Punct::new('=', Spacing::Alone)),
     ]);
     init(acc);
-    acc.extend([
-        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
-    ]);
+    acc.extend([TokenTree::Punct(Punct::new(';', Spacing::Alone))]);
     stok
 }
 
@@ -343,9 +373,10 @@ impl<'a> TextCursor<'a> {
         let span = self.span;
 
         if let Some(text) = text.strip_prefix('{') {
-            let len = text.find('}').map(|it| it + 1).ok_or_else(|| {
-                self.emit_error(errors, "unclosed `{` in command")
-            })?;
+            let len = text
+                .find('}')
+                .map(|it| it + 1)
+                .ok_or_else(|| self.emit_error(errors, "unclosed `{` in command"))?;
             let (part, rest) = text.split_at(len);
             let mut part = part.strip_suffix('}').unwrap();
             let mut splat = false;
@@ -365,9 +396,10 @@ impl<'a> TextCursor<'a> {
         }
 
         if let Some(text) = text.strip_prefix('\'') {
-            let len = text.find('\'').map(|it| it + 1).ok_or_else(|| {
-                self.emit_error(errors, "unclosed `'` in command")
-            })?;
+            let len = text
+                .find('\'')
+                .map(|it| it + 1)
+                .ok_or_else(|| self.emit_error(errors, "unclosed `'` in command"))?;
             let (part, rest) = text.split_at(len);
             let part = part.strip_suffix('\'').unwrap();
             self.left = rest;
@@ -384,7 +416,12 @@ impl<'a> TextCursor<'a> {
             .find(|it: char| it.is_ascii_whitespace() || it == '\'' || it == '{')
             .unwrap_or(text.len());
         let (part, rest) = text.split_at(len);
-        let token = Token { joined_to_prev, kind: TokenKind::Word, text: part, span };
+        let token = Token {
+            joined_to_prev,
+            kind: TokenKind::Word,
+            text: part,
+            span,
+        };
         self.left = rest;
         Ok(Some(token))
     }
@@ -395,7 +432,10 @@ impl<'a> TextCursor<'a> {
     }
 }
 
-fn string_literal(input: &TokenTree, errors: &mut Errors) -> Result<(String, Span), ErrorGuaranteed> {
+fn string_literal(
+    input: &TokenTree,
+    errors: &mut Errors,
+) -> Result<(String, Span), ErrorGuaranteed> {
     let literal = match input {
         TokenTree::Literal(literal) => Some(literal.clone()),
         TokenTree::Group(g) => match g.delimiter() {
@@ -433,13 +473,16 @@ fn trim_quotes(text: &str, quote: char) -> Option<String> {
 #[derive(Clone, Copy)]
 struct ErrorGuaranteed(());
 
-fn try_macro(input: TokenStream, f: impl FnOnce(TokenStream, &mut Errors) -> Result<TokenStream, ErrorGuaranteed>) -> TokenStream {
+fn try_macro(
+    input: TokenStream,
+    f: impl FnOnce(TokenStream, &mut Errors) -> Result<TokenStream, ErrorGuaranteed>,
+) -> TokenStream {
     let mut errors = Errors::default();
     match f(input, &mut errors) {
         Ok(mut output) => {
             errors.append_to(&mut output);
             output
-        },
+        }
         Err(guar) => errors.to_error(guar),
     }
 }

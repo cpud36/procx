@@ -1,9 +1,9 @@
 //! This crate provides a simpler and more ergonomic api to construct and run shell commands.
-//! 
+//!
 //! There are two main entry points:
 //! 1. macro api via [`cmd!`] macro, which allows to create cmd objects as if they were just shell strings,
 //! 2. and builder api via [`Cmd`] struct. It's api is similar to the one of [`std::process::Command`], but provides richer api.
-//! 
+//!
 //! ```no_run
 //! use procx::{cmd};
 //!
@@ -11,11 +11,16 @@
 //! let commit_hash = cmd!("git rev-parse {branch}").read()?;
 //! # Ok::<(), procx::Error>(())
 //! ```
-//! 
+//!
 //! It is inspired by [`xshell`](https://crates.io/crates/xshell) crate, but aims to be ergonomic in the more compilcated cases.
 
 use std::{
-    ffi::{OsStr, OsString}, fmt::{self, Write}, io::{self, Read}, path::Path, str, string::FromUtf8Error
+    ffi::{OsStr, OsString},
+    fmt::{self, Write},
+    io::{self, Read},
+    path::Path,
+    str,
+    string::FromUtf8Error,
 };
 
 use shell_escape::escape;
@@ -31,13 +36,13 @@ pub use crate::stdio::{Input, Output};
 /// Internal utilities for the macros. Do not use directly.
 #[doc(hidden)]
 pub mod plumbing {
-    use std::ffi::OsString;
     use crate::{Args, Cmd};
+    use std::ffi::OsString;
 
-    pub use procx_macros::{cmd, arg, args};
+    pub use procx_macros::{arg, args, cmd};
 
     pub fn new_string() -> OsString {
-        OsString::new()    
+        OsString::new()
     }
 
     pub fn new_cmd(cmd: impl Into<OsString>) -> Cmd {
@@ -50,13 +55,12 @@ pub mod plumbing {
     pub fn new_args() -> Args {
         Args::new()
     }
-    
 }
 
 /// Creates a new command from the given format string
-/// 
+///
 /// # Example
-/// 
+///
 /// You can write commands with string interpolation and they will be mapped to proper command objects.
 /// ```
 /// # use procx::cmd;
@@ -64,7 +68,7 @@ pub mod plumbing {
 /// let cmd = cmd!("magic -o={output}");
 /// assert_eq!(cmd.to_string(), r#"`magic -o=out.txt`"#);
 /// ```
-/// 
+///
 /// Use single quotes to put spaces in the command string. You can put single-quoted strings next to interpolation to merge them.
 /// ```
 /// # use procx::cmd;
@@ -72,7 +76,7 @@ pub mod plumbing {
 /// let cmd = cmd!("echo 'single quotes' 'hello '{name}");
 /// assert_eq!(cmd.to_string(), r#"`echo "single quotes" "hello world"`"#);
 /// ```
-/// 
+///
 /// Use `{arg..}` to pass multiple arguments to the command.
 /// ```
 /// # use procx::cmd;
@@ -83,9 +87,9 @@ pub mod plumbing {
 /// assert_eq!(cmd.to_string(), r#"`magic a b c d`"#);
 /// ```
 /// You cannot merge `{arg..}` with other arguments - map them before passing to the macro.
-/// 
+///
 /// N.B. The command must be specified as non-splat argument (e.g. `cmd` or `{cmd}`, but not `{cmd..}`)
-/// 
+///
 /// See [`arg!`] and [`args!`] if you want to construct arguments separately.
 #[macro_export]
 macro_rules! cmd {
@@ -98,9 +102,9 @@ macro_rules! cmd {
 }
 
 /// Creates a new argument from the given format string.
-/// 
+///
 /// Syntax is similar to [`cmd!`], but only one argument is allowed.
-/// 
+///
 /// ```
 /// # use procx::arg;
 /// let arg1 = arg!("hello");
@@ -119,9 +123,9 @@ macro_rules! arg {
 }
 
 /// Creates a new list of arguments from the given format string.
-/// 
+///
 /// Syntax is similar to [`cmd!`], but does not specify the command.
-/// 
+///
 /// ```
 /// # use procx::{cmd, args};
 /// let multi = ["a", "b", "c"];
@@ -160,7 +164,12 @@ impl fmt::Display for Cmd {
         if self.args.is_empty() {
             write!(f, "`{}`", self.program.to_string_lossy())
         } else {
-            write!(f, "`{} {}`", self.program.to_string_lossy(), self.args.display_content())
+            write!(
+                f,
+                "`{} {}`",
+                self.program.to_string_lossy(),
+                self.args.display_content()
+            )
         }
     }
 }
@@ -291,7 +300,7 @@ impl Cmd {
     }
 
     /// Runs the process and returns its exit status only.
-    /// 
+    ///
     /// If you want to get the output of the process, see [`Self::output`].
     /// If you want to interact with the process, see [`Self::spawn`].
     pub fn status(&self) -> Result<std::process::ExitStatus, Error> {
@@ -313,10 +322,10 @@ impl Cmd {
     }
 
     /// Runs the process and acquires its output. Only returns ok if the process exited with success.
-    /// 
+    ///
     /// By default, stdout and stderr are captured and returned.
     /// If you want to avoid capturing output, configure corresponding stdio to non-captured mode.
-    /// 
+    ///
     /// If you want to get the output regardless of the exit status, see [`Self::output_ignore_status`].
     pub fn output(&self) -> Result<std::process::Output, Error> {
         let output = self.output_ignore_status()?;
@@ -325,7 +334,7 @@ impl Cmd {
     }
 
     /// Runs the process and aquires its output, regardless of the exit status (success or failure).
-    /// 
+    ///
     /// Generally behaves like [`Self::output`], but does not treat non-success exit status as an error.
     pub fn output_ignore_status(&self) -> Result<std::process::Output, Error> {
         let mut cmd = self.build_cmd();
@@ -335,9 +344,20 @@ impl Cmd {
             .map_err(|error| Error::spawn_error(self, error))?;
         drop(child.stdin.take());
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
-        let collect_stdout = self.stdio.stdout.as_ref().is_none_or(|it| it.is_collectable());
-        let collect_stderr = self.stdio.stderr.as_ref().is_none_or(|it| it.is_collectable());
-        match (child.stdout.take().filter(|_| collect_stdout), child.stderr.take().filter(|_| collect_stderr)) {
+        let collect_stdout = self
+            .stdio
+            .stdout
+            .as_ref()
+            .is_none_or(|it| it.is_collectable());
+        let collect_stderr = self
+            .stdio
+            .stderr
+            .as_ref()
+            .is_none_or(|it| it.is_collectable());
+        match (
+            child.stdout.take().filter(|_| collect_stdout),
+            child.stderr.take().filter(|_| collect_stderr),
+        ) {
             (None, None) => {}
             (Some(mut out), None) => {
                 let res = out.read_to_end(&mut stdout);
@@ -354,7 +374,11 @@ impl Cmd {
         }
 
         match child.wait() {
-            Ok(status) => Ok(std::process::Output { status, stdout, stderr }),
+            Ok(status) => Ok(std::process::Output {
+                status,
+                stdout,
+                stderr,
+            }),
             Err(error) => {
                 return Err(Error::wait_error(self, error).output(stdout, stderr));
             }
@@ -362,23 +386,29 @@ impl Cmd {
     }
 
     /// Reads stdout of the process as a string.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Requires stdout to be captured.
     pub fn read(&self) -> Result<String, Error> {
-        assert!(self.stdio.stdout.as_ref().is_none_or(|it| it.is_captured()), "cannot call read() if stdout is not captured");
+        assert!(
+            self.stdio.stdout.as_ref().is_none_or(|it| it.is_captured()),
+            "cannot call read() if stdout is not captured"
+        );
         let output = self.output()?;
         read_stream(output.stdout).map_err(|error| Error::non_utf8_output(self, error))
     }
 
     /// Reads stderr of the process as a string.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Requires stderr to be captured.
     pub fn read_stderr(&self) -> Result<String, Error> {
-        assert!(self.stdio.stderr.as_ref().is_none_or(|it| it.is_captured()), "cannot call read_stderr() if stderr is not captured");
+        assert!(
+            self.stdio.stderr.as_ref().is_none_or(|it| it.is_captured()),
+            "cannot call read_stderr() if stderr is not captured"
+        );
         let output = self.output()?;
         read_stream(output.stderr).map_err(|error| Error::non_utf8_output(self, error))
     }
@@ -464,7 +494,9 @@ impl IntoIterator for Args {
     type IntoIter = ArgsIntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        ArgsIntoIter { args: self.args.into_iter() }
+        ArgsIntoIter {
+            args: self.args.into_iter(),
+        }
     }
 }
 

@@ -1,5 +1,7 @@
-use std::{collections::BTreeMap, ffi::{OsStr, OsString}};
-
+use std::{
+    collections::BTreeMap,
+    ffi::{OsStr, OsString},
+};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Env {
@@ -9,7 +11,8 @@ pub(crate) struct Env {
 
 impl Env {
     pub(crate) fn set(&mut self, key: &OsStr, value: &OsStr) {
-        self.vars.insert(key.to_os_string(), Some(value.to_os_string()));
+        self.vars
+            .insert(key.to_os_string(), Some(value.to_os_string()));
     }
 
     pub(crate) fn remove(&mut self, key: &OsStr) {

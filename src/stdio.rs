@@ -22,7 +22,7 @@ impl Stdio {
         self.stderr = Some(stderr);
         self
     }
-    
+
     pub(crate) fn configure(&self, cmd: &mut std::process::Command, default_stdout: Output) {
         if let Some(stdin) = &self.stdin {
             cmd.stdin(stdin.to_stdio());
@@ -34,12 +34,21 @@ impl Stdio {
         cmd.stderr(stderr.to_stdio());
     }
 
-    pub(crate) fn spawn_child(&self, cmd: &mut std::process::Command, default_stdout: Output) -> Result<std::process::Child, SpawnError> {
+    pub(crate) fn spawn_child(
+        &self,
+        cmd: &mut std::process::Command,
+        default_stdout: Output,
+    ) -> Result<std::process::Child, SpawnError> {
         self.configure(cmd, default_stdout);
-        
+
         let mut child = cmd.spawn().map_err(SpawnError::Spawn)?;
         if let Some(data) = self.stdin.as_ref().and_then(|it| it.as_data()) {
-            child.stdin.take().unwrap().write_all(data).map_err(SpawnError::StdinWrite)?;
+            child
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(data)
+                .map_err(SpawnError::StdinWrite)?;
         }
         Ok(child)
     }
@@ -75,9 +84,9 @@ impl Input {
     }
 
     /// Pipe input via stream.
-    /// 
+    ///
     /// To use this, you need to run the command via [`read`] method.
-    /// 
+    ///
     /// [`read`]: crate::Cmd::read
     pub fn piped() -> Input {
         Self(InputKind::Piped)
@@ -111,16 +120,16 @@ impl Input {
 }
 
 /// Represents how to setup output stream of a process.
-/// 
+///
 /// The stream can be captured, or non-captured.
 /// When the stream is captured corresponding methods collect the stream into a buffer,
 /// and allow it to be consumed via methods like [`read`] or collected in the error value.
-/// 
+///
 /// When stream is captured, it can also be be either collectable, or not.
 /// The collectable attribute controls whether if we can collect the output for error reporting.
 /// This is generally preferable since it improves error message readability.
 /// But in case the output stream is too large, or even infinite, we allow for opt-in to not collect the output.
-/// 
+///
 /// [`read`]: crate::Cmd::read
 #[derive(Debug, Clone)]
 pub struct Output(OutputKind);
@@ -156,7 +165,7 @@ impl Output {
     pub(crate) fn is_captured(&self) -> bool {
         matches!(self.0, OutputKind::Piped { .. })
     }
-    
+
     pub(crate) fn is_collectable(&self) -> bool {
         matches!(self.0, OutputKind::Piped { collect: true })
     }
