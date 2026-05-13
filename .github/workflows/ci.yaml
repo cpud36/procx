@@ -33,3 +33,5 @@ jobs:
       run: cargo test --verbose
     - name: Build examples
       run: cargo build --examples --verbose
+    - name: Check formatting
+      run: cargo fmt --check --verbose
