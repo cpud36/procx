@@ -86,8 +86,10 @@ fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<C
     let mut args = Vec::new();
     let mut prev_splat: Option<Token> = None;
     while let Ok(Some(token)) = cmd.eat_token(errors) {
-        if let Some(splat) = prev_splat.take() && token.joined_to_prev {
-            errors.emit(&format!("can't combine splat with concatentaion, add spaces around {{{}..}}``", splat.text), splat.span);
+        if let Some(splat) = prev_splat.take() {
+            if token.joined_to_prev {
+                errors.emit(&format!("can't combine splat with concatentaion, add spaces around {{{}..}}``", splat.text), splat.span);
+            }
         }
         let tt = match token.kind {
             TokenKind::Word | TokenKind::String => token.to_tt(&krate),
@@ -109,10 +111,9 @@ fn lex(mut input: InputIter, krate: &Krate, errors: &mut Errors) -> Result<Vec<C
                 continue;
             }
         };
-        if token.joined_to_prev && let Some(arg) = args.last_mut() {
-            arg.extend_word(tt);
-        } else {
-            args.push(CmdPart::Arg(tt));
+        match (token.joined_to_prev, args.last_mut()) {
+            (true, Some(arg)) => arg.extend_word(tt),
+            _ => args.push(CmdPart::Arg(tt)),
         }
     }
     

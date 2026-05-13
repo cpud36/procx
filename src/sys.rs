@@ -52,10 +52,10 @@ mod unix {
         loop {
             loop {
                 let res = unsafe { cvt(libc::poll(fds.as_mut_ptr(), fds.len() as _, -1)) };
-                if let Err(ref err) = res
-                    && err.kind() == io::ErrorKind::Interrupted
-                {
-                    continue;
+                if let Err(ref err) = res {
+                    if err.kind() == io::ErrorKind::Interrupted {
+                        continue;
+                    }
                 }
                 res?;
                 break;

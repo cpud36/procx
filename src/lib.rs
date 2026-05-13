@@ -15,10 +15,7 @@
 //! It is inspired by [`xshell`](https://crates.io/crates/xshell) crate, but aims to be ergonomic in the more compilcated cases.
 
 use std::{
-    ffi::{OsStr, OsString},
-    fmt::{self, Write}, io::{self, Read},
-    path::Path,
-    string::FromUtf8Error,
+    ffi::{OsStr, OsString}, fmt::{self, Write}, io::{self, Read}, path::Path, str, string::FromUtf8Error
 };
 
 use shell_escape::escape;
@@ -161,9 +158,9 @@ pub struct Cmd {
 impl fmt::Display for Cmd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.args.is_empty() {
-            write!(f, "`{}`", self.program.display())
+            write!(f, "`{}`", self.program.to_string_lossy())
         } else {
-            write!(f, "`{} {}`", self.program.display(), self.args.display_content())
+            write!(f, "`{} {}`", self.program.to_string_lossy(), self.args.display_content())
         }
     }
 }
