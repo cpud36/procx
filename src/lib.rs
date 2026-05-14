@@ -4,15 +4,66 @@
 //! 1. macro api via [`cmd!`] macro, which allows to create cmd objects as if they were just shell strings,
 //! 2. and builder api via [`Cmd`] struct. It's api is similar to the one of [`std::process::Command`], but provides richer api.
 //!
-//! ```no_run
-//! use xproc::{cmd};
+//! # Quick start
 //!
-//! let branch = "main";
-//! let commit_hash = cmd!("git rev-parse {branch}").read()?;
+//! Getting a commit hash of a branch:
+//! ```
+//! fn commit_hash(branch: &str) -> Result<String, xproc::Error> {
+//!     xproc::cmd!("git rev-parse {branch}").read()
+//! }
+//! ```
+//! Here we use the [`cmd!`] macro that parses the string (at compile time) and properly splits it into arguments.
+//! It handles escaping by itself, so there is no need to worry about shell-injection attacks (.e.g. branch names with spaces and special characters).
+//!
+//! The result of the [`cmd!`] macro is a [`Cmd`] struct that has similar api to [`std::process::Command`].
+//! Important to note, that [`cmd!`] macro does no io, it only constructs the command object.
+//! The exact way to actually run the command is then determined by the method you call on the [`Cmd`].
+//!
+//! Here is a quick breakdown of the methods on the [`Cmd`], from least to most powerful:
+//! 1. [`Cmd::run`] - just runs to completion, expects to exit successfully. IO is inherited.
+//! 2. [`Cmd::status`] - same, but allows any exit status.
+//! 3. [`Cmd::read`] - runs to (successfull) completion and collects stdout into a string.
+//! 4. [`Cmd::read_stderr`] - same, but for stderr.
+//! 5. [`Cmd::output`] - runs to completion and captures stdout and stderr. Expects to exit successfully.
+//! 6. [`Cmd::output_ignore_status`] - same, but does not expect to exit successfully.
+//!
+//!
+//!
+//! You can interpolate a part of the argument:
+//! ```
+//! # use std::path::Path;
+//! fn compile_c_code(input: &Path, output: &Path, opt_level: &str) -> Result<(), xproc::Error> {
+//!     xproc::cmd!("cc -O{opt_level} {input} -o {output}").run()
+//! }
+//! ```
+//! Here we interpolate opt_level into the argument getting a command like `cc -O2 hello.c -o hello`.
+//!
+//! If you want to construct the command step by step you can use more advanced api:
+//! ```no_run
+//! let input_files = ["hello.c", "world.c"];
+//! let output_file = "hello";
+//! let debug = false;
+//! let opt_level = 2;
+//!
+//! let output_options = xproc::args!("-o {output_file}");
+//! let debug_flag = debug.then_some("-g");
+//!
+//! let mut cmd = xproc::cmd!("cc {input_files..} {output_options..} {debug_flag..}");
+//!
+//! if opt_level > 1 {
+//!     let opt_level = opt_level.to_string();
+//!     cmd.arg(xproc::arg!("-O{opt_level}"));
+//! }
+//!
+//! cmd.run()?;
 //! # Ok::<(), xproc::Error>(())
 //! ```
 //!
-//! It is inspired by [`xshell`](https://crates.io/crates/xshell) crate, but aims to be ergonomic in the more compilcated cases.
+//! # See also
+//!
+//! This crate is inspired by [`xshell`](https://crates.io/crates/xshell),
+//! but aims for running larger command lines while keeping the ergonomics of the shell.
+//!
 
 use std::{
     ffi::{OsStr, OsString},
