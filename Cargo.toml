@@ -22,4 +22,3 @@ windows-core = "0.62.2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.186"
-nix = "0.31.3"
