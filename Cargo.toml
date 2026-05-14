@@ -5,6 +5,8 @@ default-members = ["."]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/cpud36/xproc"
 # this is the first version of rust that supports 2024 edition
 rust-version = "1.85.0"
 
@@ -12,6 +14,8 @@ rust-version = "1.85.0"
 name = "xproc"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 xproc-macros = { path = "xproc-macros" }
