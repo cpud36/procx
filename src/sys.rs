@@ -80,7 +80,7 @@ mod unix {
         // reader will return Ok(0), in which case we'll see `Ok` ourselves. In
         // this case we flip the other fd back into blocking mode and read
         // whatever's leftover on that file descriptor.
-        fn read(fd: &mut ChildStdout, dst: &mut Vec<u8>) -> Result<bool, io::Error> {
+        fn read(fd: &mut impl Read, dst: &mut Vec<u8>) -> Result<bool, io::Error> {
             match fd.read_to_end(dst) {
                 Ok(_) => Ok(true),
                 Err(e) => {
