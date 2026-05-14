@@ -14,7 +14,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-shell-escape = "0.1.5"
 procx-macros = { path = "procx-macros" }
 
 [target.'cfg(windows)'.dependencies]

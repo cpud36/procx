@@ -16,14 +16,12 @@
 
 use std::{
     ffi::{OsStr, OsString},
-    fmt::{self, Write},
+    fmt::{self, Debug, Write},
     io::{self, Read},
     path::Path,
     str,
     string::FromUtf8Error,
 };
-
-use shell_escape::escape;
 
 use self::{env::Env, stdio::Stdio};
 
@@ -162,12 +160,12 @@ pub struct Cmd {
 impl fmt::Display for Cmd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.args.is_empty() {
-            write!(f, "`{}`", self.program.to_string_lossy())
+            write!(f, "`{}`", DisplayArg(&self.program))
         } else {
             write!(
                 f,
                 "`{} {}`",
-                self.program.to_string_lossy(),
+                DisplayArg(&self.program),
                 self.args.display_content()
             )
         }
@@ -479,7 +477,7 @@ impl Args {
                     } else {
                         f.write_char(' ')?;
                     }
-                    write!(f, "{}", escape(arg.to_string_lossy()))?;
+                    write!(f, "{}", DisplayArg(arg))?;
                 }
                 Ok(())
             }
@@ -509,6 +507,25 @@ impl Iterator for ArgsIntoIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.args.next()
+    }
+}
+
+struct DisplayArg<'a>(&'a OsStr);
+
+impl<'a> fmt::Display for DisplayArg<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn whitelisted(ch: &u8) -> bool {
+            matches!(ch, b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'=' | b'/' | b',' | b'.' | b'+')
+        }
+
+        let bytes = self.0.as_encoded_bytes();
+        if bytes.iter().all(whitelisted) && !bytes.is_empty() {
+            // just checked we contain only (a subset of) ascii characters
+            let s = str::from_utf8(bytes).unwrap();
+            f.write_str(s)
+        } else {
+            fmt::Debug::fmt(self.0, f)
+        }
     }
 }
 
