@@ -1,5 +1,5 @@
 [package]
-name = "procx-macros"
+name = "xproc-macros"
 version.workspace = true
 edition.workspace = true
 

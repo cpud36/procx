@@ -5,11 +5,11 @@
 //! 2. and builder api via [`Cmd`] struct. It's api is similar to the one of [`std::process::Command`], but provides richer api.
 //!
 //! ```no_run
-//! use procx::{cmd};
+//! use xproc::{cmd};
 //!
 //! let branch = "main";
 //! let commit_hash = cmd!("git rev-parse {branch}").read()?;
-//! # Ok::<(), procx::Error>(())
+//! # Ok::<(), xproc::Error>(())
 //! ```
 //!
 //! It is inspired by [`xshell`](https://crates.io/crates/xshell) crate, but aims to be ergonomic in the more compilcated cases.
@@ -37,7 +37,7 @@ pub mod plumbing {
     use crate::{Args, Cmd};
     use std::ffi::OsString;
 
-    pub use procx_macros::{arg, args, cmd};
+    pub use xproc_macros::{arg, args, cmd};
 
     pub fn new_string() -> OsString {
         OsString::new()
@@ -61,7 +61,7 @@ pub mod plumbing {
 ///
 /// You can write commands with string interpolation and they will be mapped to proper command objects.
 /// ```
-/// # use procx::cmd;
+/// # use xproc::cmd;
 /// let output = "out.txt";
 /// let cmd = cmd!("magic -o={output}");
 /// assert_eq!(cmd.to_string(), r#"`magic -o=out.txt`"#);
@@ -69,7 +69,7 @@ pub mod plumbing {
 ///
 /// Use single quotes to put spaces in the command string. You can put single-quoted strings next to interpolation to merge them.
 /// ```
-/// # use procx::cmd;
+/// # use xproc::cmd;
 /// let name = "world";
 /// let cmd = cmd!("echo 'single quotes' 'hello '{name}");
 /// assert_eq!(cmd.to_string(), r#"`echo "single quotes" "hello world"`"#);
@@ -77,7 +77,7 @@ pub mod plumbing {
 ///
 /// Use `{arg..}` to pass multiple arguments to the command.
 /// ```
-/// # use procx::cmd;
+/// # use xproc::cmd;
 /// let multi = ["a", "b", "c"];
 /// let optional1 = Some("d");
 /// let optional2: Option<&str> = None;
@@ -104,7 +104,7 @@ macro_rules! cmd {
 /// Syntax is similar to [`cmd!`], but only one argument is allowed.
 ///
 /// ```
-/// # use procx::arg;
+/// # use xproc::arg;
 /// let arg1 = arg!("hello");
 /// assert_eq!(format!("{arg1:?}"), r#""hello""#);
 /// let arg2 = arg!("'hello world'");
@@ -125,7 +125,7 @@ macro_rules! arg {
 /// Syntax is similar to [`cmd!`], but does not specify the command.
 ///
 /// ```
-/// # use procx::{cmd, args};
+/// # use xproc::{cmd, args};
 /// let multi = ["a", "b", "c"];
 /// let output = "out.txt";
 /// let args = args!("foo {multi..} -o={output}");

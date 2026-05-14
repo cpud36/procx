@@ -180,7 +180,7 @@ impl Krate {
                 TokenStream::from_iter([
                     TokenTree::Punct(Punct::new(':', Spacing::Joint)),
                     TokenTree::Punct(Punct::new(':', Spacing::Alone)),
-                    TokenTree::Ident(Ident::new("procx", span)),
+                    TokenTree::Ident(Ident::new("xproc", span)),
                     TokenTree::Punct(Punct::new(':', Spacing::Joint)),
                     TokenTree::Punct(Punct::new(':', Spacing::Alone)),
                     TokenTree::Ident(Ident::new("plumbing", span)),

@@ -18,20 +18,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "procx"
-version = "0.1.0"
-dependencies = [
- "libc",
- "procx-macros",
- "windows",
- "windows-core",
-]
-
-[[package]]
-name = "procx-macros"
-version = "0.1.0"
-
-[[package]]
 name = "quote"
 version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -166,3 +152,17 @@ checksum = "3949bd5b99cafdf1c7ca86b43ca564028dfe27d66958f2470940f73d86d75b37"
 dependencies = [
  "windows-link",
 ]
+
+[[package]]
+name = "xproc"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "windows",
+ "windows-core",
+ "xproc-macros",
+]
+
+[[package]]
+name = "xproc-macros"
+version = "0.1.0"

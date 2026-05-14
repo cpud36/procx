@@ -1,4 +1,4 @@
-use procx::{arg, args, cmd};
+use xproc::{arg, args, cmd};
 
 fn main() {
     let lto = "off";

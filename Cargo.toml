@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "procx-macros"]
+members = [".", "xproc-macros"]
 default-members = ["."]
 
 [workspace.package]
@@ -9,12 +9,12 @@ edition = "2024"
 rust-version = "1.85.0"
 
 [package]
-name = "procx"
+name = "xproc"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-procx-macros = { path = "procx-macros" }
+xproc-macros = { path = "xproc-macros" }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62.2", features = ["Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Threading"] }
